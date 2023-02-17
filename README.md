@@ -14,7 +14,7 @@
 
 The objective of this dashboard it to enable users to make inferences on the the air pollution trends in Canada between 2001 to 2020. These inferences are conveniently put in perspective by displaying comparisons with world metrics.
 
-![sketch.png](attachment:04c0e5a2-3599-4f63-9105-652ecf950e19.png)
+<img src="https://github.com/UBC-MDS/air-pollution/blob/description_sketch/sketch.png"  width="60%" height="30%">
 
 The landing page presents the user with options on the left side to select a Province in Canada or/and a specific City in Canada via drop-down menus. The pollutants of interest can be selected via checkboxes. By default, these options are set as entire Canada and all pollutants. This corresponds to the following selections, Select Province: "All" , Select City: Inactive, Select Pollutant: "All".
 
