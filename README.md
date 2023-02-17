@@ -29,7 +29,3 @@ The dashboard provides definitions of the pollutants, model assumptions and a su
 
 
 ## License
-
-```python
-
-```
