@@ -1,16 +1,12 @@
 # Air Pollution in Canada
 
+> Authors: Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong
+>
+> Project complete in accordance with DSCI 532 for the UBC MDS Program 2022-23 for Group 13
 
-## Team Members:
+## About
 
-* Elena Ganacheva
-* Kelvin Wong
-* Ranjit Sundaramurthi
-* Ritisha Sharma
-
-
-## Description
-
+For information on the intention, research questions, as well as a more detailed description of the data, please read the [proposal](reports/proposal.md) instead.
 
 The objective of this dashboard it to enable users to make inferences on the the air pollution trends in Canada between 2001 to 2020. These inferences are conveniently put in perspective by displaying comparisons with world metrics.
 
@@ -25,7 +21,29 @@ The dashboard flaunts another display zone 2 at the center wherein the geospatia
 The dashboard provides definitions of the pollutants, model assumptions and a summary to provide an overall insight. The attributions and credits are enlisted for user convenience.  
 
 
-## Requirements
+## Usage
 
+The project is implemented in R using [Shiny](https://shiny.rstudio.com/). After setting up the R development environment, install the dependencies by:
+
+```bash
+R -e 'install.packages("shiny")'
+```
+
+It can be run by:
+```bash
+Rscript app.R
+```
 
 ## License
+
+`air-pollution` was created by Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, and Kelvin Wong.
+
+The [National Air Pollution Surveillance (NAPS)](https://www.canada.ca/en/environment-climate-change/services/air-pollution/monitoring-networks-data/national-air-pollution-program.html) data is published by the [Government of Canada](https://www.canada.ca/), under the terms of [Open Government License - Canada](https://open.canada.ca/en/open-government-licence-canada).
+
+The [OECD Air and GHG emissions](https://data.oecd.org/air/air-and-ghg-emissions.htm) data is published by the [Organisation for Economic Co-operation and Development](https://www.oecd.org/). Its usage is governed by the [OECD Terms and Conditions](https://www.oecd.org/termsandconditions/).
+
+Unless otherwise specified, the materials in this repository are covered under this copyright statement:
+
+Copyright (c) 2023 Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong
+
+The software and associated documentation files are licensed under the MIT License. You may find a copy of the license at [`LICENSE`](LICENSE).
