@@ -1,40 +1,102 @@
 library(shiny)
+library(fmsb)
+library(tidyverse)
+library(plyr)
+
+options(shiny.autoreload=TRUE)
+
+data <- readr::read_csv("data/CA_NAPS_Daily_2020.csv")
+data$City <- as.factor(data$City)
+data$Pollutant <- as.factor(data$Pollutant)
 
 # Define UI for application
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel("Air Pollution"),
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
+            dateRangeInput("daterange",
+                        "Date Range:",
+                        min = min(data$Date),
+                        max = max(data$Date),
+                        start = min(data$Date),
+                        end = max(data$Date)),
+            selectInput("province",
+                        "Province:",
+                        choices = c(
+                          "All" = TRUE,
+                          "Alberta" = "AB",
+                          "British Columbia" = "BC",
+                          "Manitoba" = "MB",
+                          "New Brunswick" = "NB",
+                          "Newfoundland" = "NL",
+                          "Nova Scotia" = "NS",
+                          "Northwest Territories" = "NT",
+                          "Ontario" = "ON",
+                          "Prince Edward Island" = "PE",
+                          "Quebec" = "QB",
+                          "Saskatchewan" = "SK",
+                          "Yukon" = "YU"
+                        )),
+            selectInput("city",
+                        "City:",
+                        choices = c("All" = TRUE, levels(data$City))),
+            checkboxGroupInput("pollutant",
+                               "Pollutants:",
+                               choices = c("ALL" = TRUE, levels(data$Pollutant)),
+                               selected = TRUE
+              
+            )
         ),
-
-        # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("distPlot")
+           plotOutput("radarPlot")
         )
     )
 )
 
 # Define server logic required
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
+  
+    #Filters the data based on user selections
+    data_selected <- reactive({
+      if(input$province == TRUE & input$city == TRUE & TRUE %in% input$pollutant){
+        data |> dplyr::filter(between(Date, input$daterange[1], input$daterange[2]))
+      }else if(input$province == TRUE & input$city == TRUE){
+        data |> 
+        dplyr::filter(Pollutant %in% input$pollutant,
+                      between(Date, input$daterange[1], input$daterange[2]))
+      }else if(input$city == TRUE & TRUE %in% input$pollutant){
+        data |> 
+          dplyr::filter(Territory == input$province,
+                        between(Date, input$daterange[1], input$daterange[2]))
+      }else if (TRUE %in% input$pollutant){
+        data |> 
+          dplyr::filter(Territory == input$province,
+                        City == input$city,
+                        between(Date, input$daterange[1], input$daterange[2]))
+      }else{
+        data |> 
+          dplyr::filter(Territory == input$province,
+                        City == input$city,
+                        Pollutant %in% input$pollutant,
+                        between(Date, input$daterange[1], input$daterange[2]))
+      }
+    })
+    
+    #Produces a radar plot
+    output$radarPlot <- renderPlot({
+      data_radar <- data_selected() |> 
+        dplyr::group_by(Pollutant) |> 
+        dplyr::summarise(Value = mean(Value)) |>
+        tidyr::pivot_wider(names_from = "Pollutant", values_from = "Value")
+      max <- plyr::round_any(max(data_radar), 10, f=`ceiling`)
+      n_col <- ncol(data_radar)
+      data_radar <- rbind(rep(max,n_col), rep(0,n_col), data_radar)
+      
+      fmsb::radarchart(data_radar)
     })
 }
 
