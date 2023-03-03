@@ -2,6 +2,8 @@ library(shiny)
 library(fmsb)
 library(tidyverse)
 library(plyr)
+library(lubridate)
+library(dplyr)
 
 options(shiny.autoreload=TRUE)
 
@@ -52,8 +54,14 @@ ui <- fluidPage(
             )
         ),
         mainPanel(
-           plotOutput("radarPlot")
-        )
+          tabsetPanel(type = "tabs",
+                      tabPanel("Breakdown of Pollutants",
+                               fluidRow(
+                                 column(width=5, plotOutput("radarPlot")),
+                                 column(width=7, plotOutput("stackedBarChart"))
+                               )
+                      )
+        ))
     )
 )
 
@@ -97,6 +105,29 @@ server <- function(input, output) {
       data_radar <- rbind(rep(max,n_col), rep(0,n_col), data_radar)
       
       fmsb::radarchart(data_radar)
+    })
+    
+    output$stackedBarChart <- renderPlot({
+      bar_df <- data_selected()
+      
+      bar_df$year_month <- format(as.Date(bar_df$Date), "%y-%m")
+
+      bar_df <- bar_df |>
+        dplyr::group_by(year_month, Pollutant) |>
+        dplyr::summarise(avg_val = mean(Value)) |>
+        arrange(avg_val)
+      
+      pollutant_order <- c("CO", "SO2", "NO", "NO2", "PM2.5", "NOX", "PM10", "O3")
+      bar_df$Pollutant <- factor(bar_df$Pollutant, 
+                                 levels = pollutant_order)
+        
+      ggplot(bar_df, aes(x = year_month, y = avg_val, fill = Pollutant)) +
+        geom_col() +
+        labs(x = "Year-Month",
+             y = "Monthly average concentration (ppm)",
+             title = "Breakdown by pollutants of the monthly average concentration") +
+        scale_fill_brewer(palette = "Set2", labels = pollutant_order) +
+        theme_classic()
     })
 }
 
