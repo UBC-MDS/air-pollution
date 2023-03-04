@@ -23,10 +23,12 @@ The dashboard provides definitions of the pollutants, model assumptions and a su
 
 ## Usage
 
-The project is implemented in R using [Shiny](https://shiny.rstudio.com/). After setting up the R development environment, install the dependencies by:
+The project is implemented in R using [Shiny](https://shiny.rstudio.com/).
+
+After setting up the R development environment, install the dependencies by:
 
 ```bash
-R -e 'install.packages("shiny")'
+Rscript install-deps.R
 ```
 
 It can be run by:
