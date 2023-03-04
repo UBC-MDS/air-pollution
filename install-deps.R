@@ -1,3 +1,3 @@
-for (package in c("shiny", "fmsb", "tidyverse", "plyr")) {
+for (package in c("shiny", "fmsb", "tidyverse", "plyr", "leaflet")) {
     install.packages(package)
 }
