@@ -5,6 +5,10 @@ library(tidyverse)
 
 source("config.R")
 
+if (Sys.getenv("PORT") != "") {
+  options(shiny.port = as.integer(Sys.getenv("PORT")))
+}
+
 globalVariables(c(NAPS_dataset_path))
 
 options(shiny.autoreload=TRUE)
@@ -12,9 +16,9 @@ options(shiny.autoreload=TRUE)
 cat("Loading the NAPS dataset. Please wait...")
 
 data <- readr::read_csv(NAPS_dataset_path) |>
-  mutate_if(is.character, utf8::utf8_encode) |>
-  mutate(City <- as.factor(City),
-         Pollutant <- as.factor(Pollutant))
+  mutate(City = as.factor(City),
+         Pollutant = as.factor(Pollutant)) |>
+  mutate_if(is.character, utf8::utf8_encode)
 
 cat("Done\n")
 
