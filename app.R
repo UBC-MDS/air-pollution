@@ -1,9 +1,7 @@
 library(shiny)
 library(fmsb)
-library(tidyverse)
 library(plyr)
-library(lubridate)
-library(dplyr)
+library(tidyverse)
 
 options(shiny.autoreload=TRUE)
 
