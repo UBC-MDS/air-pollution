@@ -2,6 +2,7 @@ library(shiny)
 library(fmsb)
 library(plyr)
 library(tidyverse)
+library(leaflet)
 
 source("config.R")
 
@@ -80,7 +81,8 @@ ui <- fluidPage(
                                  column(width=5, plotOutput("radarPlot")),
                                  column(width=7, plotOutput("stackedBarChart"))
                                )
-                      )
+                      ),
+                      tabPanel("Map", leafletOutput("map"))
         ))
     ),
     HTML("<h5><b>Definitions</b></h5>
@@ -94,7 +96,6 @@ ui <- fluidPage(
           <li>PM2.5: particulate matter less than or equal to 10 micrometres</li>
           <li>SO2: Sulphur dioxide</li>
          </ul>"
-      
     ),
     hr(),
     HTML("<p><b>Authors:</b> Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong</p> 
@@ -150,6 +151,7 @@ server <- function(input, output, session) {
       fmsb::radarchart(data_radar)
     })
     
+    # Stacked bar chart
     output$stackedBarChart <- renderPlot({
       bar_df <- data_selected()
       
@@ -171,6 +173,18 @@ server <- function(input, output, session) {
              title = "Breakdown by pollutants of the monthly average concentration") +
         scale_fill_brewer(palette = "Set2", labels = pollutant_order) +
         theme_classic()
+    })
+
+    # Map
+    output$map <- renderLeaflet({
+      locations <- data_selected() |>
+        distinct(Latitude, Longitude, City)
+
+      leaflet() |>
+        addProviderTiles(providers$CartoDB.Voyager,
+                         options = providerTileOptions(noWrap = TRUE)) |>
+        addMarkers(data = locations,
+                   label = locations |> select(City) |> pull())
     })
 }
 
