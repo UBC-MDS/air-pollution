@@ -97,8 +97,8 @@ ui <- fluidPage(
           <li>NO2: Nitrogen dioxide</li>
           <li>NOX: Nitrogen oxides </li>
           <li>O3: Ozone</li>
-          <li>PM10: Particulate matter less than or equal to 2.5 micrometres</li>
-          <li>PM2.5: particulate matter less than or equal to 10 micrometres</li>
+          <li>PM2.5: Particulate matter less than or equal to 2.5 micrometres</li>
+          <li>PM10: particulate matter less than or equal to 10 micrometres</li>
           <li>SO2: Sulphur dioxide</li>
          </ul>"
   ),
