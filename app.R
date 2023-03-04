@@ -62,7 +62,24 @@ ui <- fluidPage(
                                )
                       )
         ))
-    )
+    ),
+    HTML("<h5><b>Definitions</b></h5>
+         <ul>
+          <li>CO: Carbon monoxide</li>
+          <li>NO: Nitrogen oxide</li>
+          <li>NO2: Nitrogen dioxide</li>
+          <li>NOX: Nitrogen oxides </li>
+          <li>O3: Ozone</li>
+          <li>PM10: Particulate matter less than or equal to 2.5 micrometres</li>
+          <li>PM2.5: particulate matter less than or equal to 10 micrometres</li>
+          <li>SO2: Sulphur dioxide</li>
+         </ul>"
+      
+    ),
+    hr(),
+    HTML("<p><b>Authors:</b> Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong</p> 
+        <p><b>Attribution:</b> <a href = https://www.canada.ca/en/environment-climate-change/services/air-pollution/monitoring-networks-data/national-air-pollution-program.html>The National Air Pollution Surveillance (NAPS) data</a> is published by the Government of Canada, 
+         under the terms of the Open Government License - Canada.</p>")
 )
 
 # Define server logic required
