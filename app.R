@@ -5,11 +5,20 @@ library(plyr)
 library(lubridate)
 library(dplyr)
 
+source("config.R")
+
+globalVariables(c(NAPS_dataset_path))
+
 options(shiny.autoreload=TRUE)
 
-data <- readr::read_csv("data/CA_NAPS_Daily_2020.csv")
-data$City <- as.factor(data$City)
-data$Pollutant <- as.factor(data$Pollutant)
+cat("Loading the NAPS dataset. Please wait...")
+
+data <- readr::read_csv(NAPS_dataset_path) |>
+  mutate_if(is.character, utf8::utf8_encode) |>
+  mutate(City <- as.factor(City),
+         Pollutant <- as.factor(Pollutant))
+
+cat("Done\n")
 
 # Define UI for application
 ui <- fluidPage(
