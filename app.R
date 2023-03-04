@@ -26,6 +26,7 @@ data <- readr::read_csv(NAPS_dataset_path) |>
     Territory == "NL" ~ "Newfoundland",
     Territory == "NS" ~ "Nova Scotia" ,
     Territory == "NT" ~ "Northwest Territories",
+    Territory == "NU" ~ "Nunavut",
     Territory == "ON" ~ "Ontario",
     Territory == "PE" ~ "Prince Edward Island",
     Territory == "QC" ~ "Quebec",
