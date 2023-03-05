@@ -52,7 +52,7 @@ cat("Done\n")
 # Define UI for application
 ui <- fluidPage(
   # Application title
-  titlePanel("Air Pollution"),
+  titlePanel("Dashboard of Pollution Trends across Canada, 2001 - 2020"),
   
   # Sidebar with a slider input for number of bins
   sidebarLayout(
@@ -62,7 +62,7 @@ ui <- fluidPage(
         "Date Range:",
         min = min(data$Date),
         max = max(data$Date),
-        start = min(data$Date),
+        start = max(max(data$Date) - years(5), min(data$Date)),
         end = max(data$Date)
       ),
       selectizeInput(

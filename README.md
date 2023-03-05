@@ -10,7 +10,7 @@ For information on the intention, research questions, as well as a more detailed
 
 The objective of this dashboard it to enable users to make inferences on the the air pollution trends in Canada between 2001 to 2020. These inferences are conveniently put in perspective by displaying comparisons with world metrics.
 
-<img src="https://github.com/UBC-MDS/air-pollution/blob/description_sketch/dashboard_sketch.png"  width="100%" height="60%">
+![Dashboard](dashboard.png)
 
 The landing page presents the user with options on the left side to select a Province in Canada or/and a specific City in Canada via drop-down menus. The pollutants of interest can be selected via checkboxes. By default, these options are set as entire Canada and all pollutants. This corresponds to the following selections, Select Province: "All" , Select City: Inactive, Select Pollutant: "All".
 
@@ -22,6 +22,14 @@ The dashboard provides definitions of the pollutants, model assumptions and a su
 
 
 ## Usage
+
+The latest version of the dashboard is deployed on [`shinyapps.io`] at <https://extra.shinyapps.io/air-pollution>. 
+
+On it, you could play around with 20 years of Canada NADS Program data (2001-2020), slice it, and see if you could find some insights out of it.
+
+> Warning: The cold boot of the application can be slow at times. We are working on it!
+
+## Development
 
 The project is implemented in R using [Shiny](https://shiny.rstudio.com/).
 
@@ -35,6 +43,8 @@ It can be run by:
 ```bash
 Rscript app.R
 ```
+
+Interesting in helping out? Read the [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information!
 
 ## License
 
