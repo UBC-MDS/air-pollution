@@ -13,104 +13,116 @@ if (Sys.getenv("PORT") != "") {
 
 globalVariables(c(NAPS_dataset_path))
 
-options(shiny.autoreload=TRUE)
+options(shiny.autoreload = TRUE)
 
 cat("Loading the NAPS dataset. Please wait...")
 
 data <- readr::read_csv(NAPS_dataset_path) |>
-  mutate(Territory_Name = dplyr::case_when(
-    Territory == "AB" ~ "Alberta",
-    Territory == "BC" ~ "British Columbia",
-    Territory == "MB" ~ "Manitoba",
-    Territory == "NB" ~ "New Brunswick",
-    Territory == "NL" ~ "Newfoundland",
-    Territory == "NS" ~ "Nova Scotia" ,
-    Territory == "NT" ~ "Northwest Territories",
-    Territory == "ON" ~ "Ontario",
-    Territory == "PE" ~ "Prince Edward Island",
-    Territory == "QC" ~ "Quebec",
-    Territory == "SK" ~ "Saskatchewan",
-    Territory == "YU" ~ "Yukon",
-    TRUE ~ NA
-  )) |>
+  mutate(
+    Territory_Name = dplyr::case_when(
+      Territory == "AB" ~ "Alberta",
+      Territory == "BC" ~ "British Columbia",
+      Territory == "MB" ~ "Manitoba",
+      Territory == "NB" ~ "New Brunswick",
+      Territory == "NL" ~ "Newfoundland",
+      Territory == "NS" ~ "Nova Scotia",
+      Territory == "NT" ~ "Northwest Territories",
+      Territory == "NU" ~ "Nunavut",
+      Territory == "ON" ~ "Ontario",
+      Territory == "PE" ~ "Prince Edward Island",
+      Territory == "QC" ~ "Quebec",
+      Territory == "SK" ~ "Saskatchewan",
+      Territory == "YU" ~ "Yukon",
+      TRUE ~ NA
+    )
+  ) |>
   mutate_if(is.character, utf8::utf8_encode) |>
-  mutate(City = paste0(City, ", ", Territory),
-         Territory = paste0(Territory_Name, " (", Territory, ")")) |>
-  mutate(City = fct_relevel(as.factor(City)),
-         Territory = fct_relevel(as.factor(Territory)),
-         Pollutant = as.factor(Pollutant))
+  mutate(
+    City = paste0(City, ", ", Territory),
+    Territory = paste0(Territory_Name, " (", Territory, ")")
+  ) |>
+  mutate(
+    City = fct_relevel(as.factor(City)),
+    Territory = fct_relevel(as.factor(Territory)),
+    Pollutant = fct_relevel(as.factor(Pollutant))
+  )
 
 cat("Done\n")
 
 # Define UI for application
 ui <- fluidPage(
-  
   # Application title
   titlePanel("Air Pollution"),
   
-  # Sidebar with a slider input for number of bins 
+  # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
-      dateRangeInput("daterange",
-                     "Date Range:",
-                     min = min(data$Date),
-                     max = max(data$Date),
-                     start = min(data$Date),
-                     end = max(data$Date)),
-      selectizeInput("province",
-                     "Province/Territory:",
-                     choices = levels(data$Territory),
-                     options = list(placeholder = 'All Provinces/Territories'),
-                     multiple = TRUE
+      dateRangeInput(
+        "daterange",
+        "Date Range:",
+        min = min(data$Date),
+        max = max(data$Date),
+        start = min(data$Date),
+        end = max(data$Date)
       ),
-      selectizeInput("city",
-                     "City:",
-                     choices = levels(data$City),
-                     options = list(placeholder = 'All Cities'),
-                     multiple = TRUE
+      selectizeInput(
+        "province",
+        "Province/Territory:",
+        choices = levels(data$Territory),
+        options = list(placeholder = 'All Provinces/Territories'),
+        multiple = TRUE
       ),
-      checkboxGroupInput("pollutant",
-                         "Pollutants:",
-                         choices = levels(data$Pollutant),
-                         selected = levels(data$Pollutant)
+      selectizeInput(
+        "city",
+        "City:",
+        choices = levels(data$City),
+        options = list(placeholder = 'All Cities'),
+        multiple = TRUE
+      ),
+      checkboxGroupInput(
+        "pollutant",
+        "Pollutants:",
+        choices = levels(data$Pollutant),
+        selected = levels(data$Pollutant)
       )
     ),
-    mainPanel(
-      tabsetPanel(type = "tabs",
-                  tabPanel("Breakdown of Pollutants",
-                           fluidRow(
-                             column(width=5, plotOutput("radarPlot")),
-                             column(width=7, plotOutput("stackedBarChart"))
-                           ),
-                           fluidRow(
-                             column(width=12, plotOutput("linePlot"))
-                           )
-                  ),
-                  tabPanel("Map", leafletOutput("map"))
-      ))
+    mainPanel(tabsetPanel(
+      type = "tabs",
+      tabPanel(
+        "Breakdown of Pollutants",
+        fluidRow(column(width = 5, plotOutput("radarPlot")),
+                 column(width = 7, plotOutput("stackedBarChart"))),
+        fluidRow(column(width = 12, plotOutput("linePlot")))
+      ),
+      tabPanel("Map", leafletOutput("map"))
+    ))
   ),
-  HTML("<h5><b>Definitions</b></h5>
+  HTML(
+    "<h5><b>Definitions</b></h5>
          <ul>
           <li>CO: Carbon monoxide</li>
           <li>NO: Nitrogen oxide</li>
           <li>NO2: Nitrogen dioxide</li>
           <li>NOX: Nitrogen oxides </li>
           <li>O3: Ozone</li>
-          <li>PM10: Particulate matter less than or equal to 2.5 micrometres</li>
-          <li>PM2.5: particulate matter less than or equal to 10 micrometres</li>
+          <li>PM2.5: Particulate matter less than or equal to 2.5 micrometres</li>
+          <li>PM10: particulate matter less than or equal to 10 micrometres</li>
           <li>SO2: Sulphur dioxide</li>
          </ul>"
   ),
   hr(),
-  HTML("<p><b>Authors:</b> Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong</p> 
-        <p><b>Attribution:</b> <a href = https://www.canada.ca/en/environment-climate-change/services/air-pollution/monitoring-networks-data/national-air-pollution-program.html>The National Air Pollution Surveillance (NAPS) data</a> is published by the Government of Canada, 
-         under the terms of the Open Government License - Canada.</p>")
+  HTML(
+    '<p><b>Authors:</b> Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong</p>
+        <p><b>Attribution:</b>
+        <a href="https://www.canada.ca/en/environment-climate-change/services/air-pollution/monitoring-networks-data/national-air-pollution-program.html"
+        >The National Air Pollution Surveillance (NAPS) data</a> is published by the Government of Canada,
+         under the terms of the Open Government License - Canada.</p>'
+  )
 )
 
 # Define server logic required
 server <- function(input, output, session) {
-  
-  #Filters the data based on user selections
+  # Filters the data based on user selections
   data_selected <- reactive({
     data_filtered <- data |>
       filter(between(Date, input$daterange[1], input$daterange[2])) |>
@@ -132,25 +144,27 @@ server <- function(input, output, session) {
   # If provinces are selected, update the list of cities
   observeEvent(input$province, ignoreNULL = FALSE, {
     if (length(input$province) > 0) {
-      province_cities <- data |> filter(Territory %in% input$province) |> distinct(City) |> pull()
+      province_cities <-
+        data |> filter(Territory %in% input$province) |> distinct(City) |> pull()
     } else {
       province_cities <- data |> distinct(City) |> pull()
     }
     
-    updateSelectizeInput(session, "city",
+    updateSelectizeInput(session,
+                         "city",
                          choices = province_cities,
                          selected = c())
   })
   
-  #Produces a radar plot
+  # Produces a radar plot
   output$radarPlot <- renderPlot({
-    data_radar <- data_selected() |> 
-      dplyr::group_by(Pollutant) |> 
+    data_radar <- data_selected() |>
+      dplyr::group_by(Pollutant) |>
       dplyr::summarise(Value = mean(Value)) |>
       tidyr::pivot_wider(names_from = "Pollutant", values_from = "Value")
-    max <- plyr::round_any(max(data_radar), 10, f=`ceiling`)
+    max <- plyr::round_any(max(data_radar), 10, f = `ceiling`)
     n_col <- ncol(data_radar)
-    data_radar <- rbind(rep(max,n_col), rep(0,n_col), data_radar)
+    data_radar <- rbind(rep(max, n_col), rep(0, n_col), data_radar)
     
     fmsb::radarchart(data_radar)
   })
@@ -166,8 +180,9 @@ server <- function(input, output, session) {
       dplyr::summarise(avg_val = mean(Value)) |>
       arrange(avg_val)
     
-    pollutant_order <- c("CO", "SO2", "NO", "NO2", "PM2.5", "NOX", "PM10", "O3")
-    bar_df$Pollutant <- factor(bar_df$Pollutant, 
+    pollutant_order <-
+      c("CO", "SO2", "NO", "NO2", "PM2.5", "NOX", "PM10", "O3")
+    bar_df$Pollutant <- factor(bar_df$Pollutant,
                                levels = pollutant_order)
     
     ggplot(bar_df, aes(x = year_month, y = avg_val, fill = Pollutant)) +
@@ -185,18 +200,25 @@ server <- function(input, output, session) {
     line_df$year <- lubridate::year(line_df$Date)
     line_df$month <- lubridate::month(line_df$Date)
     
-    #summarize
-    data_summary <- line_df |> group_by(year, month, Pollutant) |> summarize(meanValue = mean(Value))
-    data_summary$date <- as.Date(paste(data_summary$year, sprintf("%02d", data_summary$month), 1, sep = "-"))
+    # summarize
+    data_summary <-
+      line_df |> group_by(year, month, Pollutant) |> summarize(meanValue = mean(Value))
+    data_summary$date <-
+      as.Date(paste(
+        data_summary$year,
+        sprintf("%02d", data_summary$month),
+        1,
+        sep = "-"
+      ))
     
-    data_summary |> 
-      ggplot(aes(x=date, y = meanValue, color = Pollutant)) +
-      geom_line() + geom_point() + 
+    data_summary |>
+      ggplot(aes(x = date, y = meanValue, color = Pollutant)) +
+      geom_line() + geom_point() +
       labs(x = "Date", y = "Pollutant level (ppm)", title = "Monthly Pollutant levels") +
-      theme(plot.title = element_text(size = rel(1.2)))+ 
-      theme_classic() + 
+      theme(plot.title = element_text(size = rel(1.2))) +
+      theme_classic() +
       theme(text = element_text(size = 10)) +
-      theme(legend.position = c(0.85,0.85))
+      theme(legend.position = c(0.85, 0.85))
   })
   
   # Map
@@ -212,5 +234,5 @@ server <- function(input, output, session) {
   })
 }
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
