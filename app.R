@@ -17,9 +17,9 @@ options(shiny.autoreload = TRUE)
 
 cat("Loading the NAPS dataset. Please wait...")
 
-data <- readr::read_csv(NAPS_dataset_path) |>
+data <- read_csv(NAPS_dataset_path, show_col_types = FALSE) |>
   mutate(
-    Territory_Name = dplyr::case_when(
+    Territory_Name = case_when(
       Territory == "AB" ~ "Alberta",
       Territory == "BC" ~ "British Columbia",
       Territory == "MB" ~ "Manitoba",
@@ -43,8 +43,11 @@ data <- readr::read_csv(NAPS_dataset_path) |>
   ) |>
   mutate(
     City = fct_relevel(as.factor(City)),
-    Territory = fct_relevel(as.factor(Territory)),
-    Pollutant = fct_relevel(as.factor(Pollutant))
+    Province = fct_relevel(as.factor(Territory)),
+    Pollutant = fct_relevel(
+      as.factor(Pollutant),
+      c("CO", "SO2", "NO", "NO2", "NOX", "O3", "PM2.5", "PM10")
+    )
   )
 
 cat("Done\n")
@@ -58,17 +61,17 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       dateRangeInput(
-        "daterange",
-        "Date Range:",
+        "date",
+        "Date:",
         min = min(data$Date),
         max = max(data$Date),
-        start = max(max(data$Date) - years(5), min(data$Date)),
+        start = min(data$Date),
         end = max(data$Date)
       ),
       selectizeInput(
         "province",
         "Province/Territory:",
-        choices = levels(data$Territory),
+        choices = levels(data$Province),
         options = list(placeholder = 'All Provinces/Territories'),
         multiple = TRUE
       ),
@@ -125,12 +128,12 @@ server <- function(input, output, session) {
   # Filters the data based on user selections
   data_selected <- reactive({
     data_filtered <- data |>
-      filter(between(Date, input$daterange[1], input$daterange[2])) |>
+      filter(between(Date, input$date[1], input$date[2])) |>
       filter(Pollutant %in% input$pollutant)
     
     if (length(input$province) > 0) {
       data_filtered <- data_filtered |>
-        filter(Territory %in% input$province)
+        filter(Province %in% input$province)
     }
     
     if (length(input$city) > 0) {
@@ -138,17 +141,24 @@ server <- function(input, output, session) {
         filter(City %in% input$city)
     }
     
+    data_filtered <- data_filtered |>
+      mutate(
+        City = fct_drop(City),
+        Province = fct_drop(Province),
+        Pollutant = fct_drop(Pollutant)
+      )
+    
     data_filtered
   })
   
   # If provinces are selected, update the list of cities
   observeEvent(input$province, ignoreNULL = FALSE, {
+    province_cities <- data
     if (length(input$province) > 0) {
       province_cities <-
-        data |> filter(Territory %in% input$province) |> distinct(City) |> pull()
-    } else {
-      province_cities <- data |> distinct(City) |> pull()
+        province_cities |> filter(Province %in% input$province)
     }
+    province_cities <- province_cities |> distinct(City) |> pull()
     
     updateSelectizeInput(session,
                          "city",
@@ -156,69 +166,56 @@ server <- function(input, output, session) {
                          selected = c())
   })
   
-  # Produces a radar plot
+  # Radar plot
   output$radarPlot <- renderPlot({
     data_radar <- data_selected() |>
-      dplyr::group_by(Pollutant) |>
-      dplyr::summarise(Value = mean(Value)) |>
-      tidyr::pivot_wider(names_from = "Pollutant", values_from = "Value")
+      group_by(Pollutant) |>
+      summarise(Value = mean(Value)) |>
+      pivot_wider(names_from = "Pollutant", values_from = "Value")
     max <- plyr::round_any(max(data_radar), 10, f = `ceiling`)
     n_col <- ncol(data_radar)
-    data_radar <- rbind(rep(max, n_col), rep(0, n_col), data_radar)
-    
-    fmsb::radarchart(data_radar)
+    data_radar <- rbind(rep(max, n_col),
+                        rep(0, n_col),
+                        data_radar)
+    fmsb::radarchart(data_radar, title = "Pollutants")
   })
   
   # Stacked bar chart
   output$stackedBarChart <- renderPlot({
-    bar_df <- data_selected()
-    
-    bar_df$year_month <- format(as.Date(bar_df$Date), "%y-%m")
-    
-    bar_df <- bar_df |>
-      dplyr::group_by(year_month, Pollutant) |>
-      dplyr::summarise(avg_val = mean(Value)) |>
-      arrange(avg_val)
-    
-    pollutant_order <-
-      c("CO", "SO2", "NO", "NO2", "PM2.5", "NOX", "PM10", "O3")
-    bar_df$Pollutant <- factor(bar_df$Pollutant,
-                               levels = pollutant_order)
-    
-    ggplot(bar_df, aes(x = year_month, y = avg_val, fill = Pollutant)) +
+    data_selected() |>
+      arrange(Value) |>
+      ggplot(aes(x = Date, y = Value, fill = Pollutant)) +
       geom_col() +
-      labs(x = "Year-Month",
-           y = "Monthly average concentration (ppm)",
+      scale_x_date(date_breaks = "years" , date_labels = "%b %y") +
+      labs(x = "Date",
+           y = "Pollutant level (ppm)",
            title = "Breakdown by pollutants of the monthly average concentration") +
-      scale_fill_brewer(palette = "Set2", labels = pollutant_order) +
-      theme_classic()
+      scale_fill_brewer(palette = "Set2") +
+      theme_classic() +
+      theme(axis.text.x = element_text(
+        angle = 90,
+        vjust = 0.5,
+        hjust = 1
+      ))
   })
   
-  # Line Plot
+  # Line plot
   output$linePlot <- renderPlot({
-    line_df <- data_selected()
-    line_df$year <- lubridate::year(line_df$Date)
-    line_df$month <- lubridate::month(line_df$Date)
-    
-    # summarize
-    data_summary <-
-      line_df |> group_by(year, month, Pollutant) |> summarize(meanValue = mean(Value))
-    data_summary$date <-
-      as.Date(paste(
-        data_summary$year,
-        sprintf("%02d", data_summary$month),
-        1,
-        sep = "-"
-      ))
-    
-    data_summary |>
-      ggplot(aes(x = date, y = meanValue, color = Pollutant)) +
-      geom_line() + geom_point() +
-      labs(x = "Date", y = "Pollutant level (ppm)", title = "Monthly Pollutant levels") +
-      theme(plot.title = element_text(size = rel(1.2))) +
+    data_selected() |>
+      ggplot(aes(x = Date, y = Value, color = Pollutant)) +
+      geom_line() +
+      geom_point() +
+      scale_x_date(date_breaks = "years" , date_labels = "%b %y") +
+      labs(x = "Date",
+           y = "Pollutant level (ppm)",
+           title = "Monthly pollutant levels") +
+      scale_colour_brewer(palette = "Set2") +
       theme_classic() +
-      theme(text = element_text(size = 10)) +
-      theme(legend.position = c(0.85, 0.85))
+      theme(axis.text.x = element_text(
+        angle = 90,
+        vjust = 0.5,
+        hjust = 1
+      ))
   })
   
   # Map
@@ -227,8 +224,7 @@ server <- function(input, output, session) {
       distinct(Latitude, Longitude, City)
     
     leaflet() |>
-      addProviderTiles(providers$CartoDB.Voyager,
-                       options = providerTileOptions(noWrap = TRUE)) |>
+      addProviderTiles(providers$CartoDB.Voyager) |>
       addMarkers(data = locations,
                  label = locations |> select(City) |> pull())
   })
