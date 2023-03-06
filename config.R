@@ -4,3 +4,7 @@
 # frame instead.
 NAPS_dataset_path <-
     'https://github.com/netsgnut/canada-naps-data/releases/download/build-latest/CA_NAPS_Monthly_2001-2020.csv'
+
+# Color palette set
+# This is passed to the RColorBrewer
+pollutant.color.palette <- 'Set2'

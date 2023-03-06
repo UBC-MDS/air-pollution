@@ -1,0 +1,9 @@
+.repo-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+label.control-label {
+  font-weight: 700;
+}
