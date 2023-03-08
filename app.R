@@ -56,8 +56,9 @@ data <- read_csv(NAPS_dataset_path, show_col_types = FALSE) |>
     Territory = paste0(Territory_Name, " (", Territory, ")")
   ) |>
   mutate(
+    NAPSID = fct_relevel(as.factor(NAPSID)),
     City = fct_relevel(as.factor(City)),
-    Province = fct_relevel(as.factor(Territory)),
+    Territory = fct_relevel(as.factor(Territory)),
     Pollutant = fct_relevel(as.factor(Pollutant), names(pollutants))
   )
 
@@ -95,9 +96,9 @@ ui <- fluidPage(
         end = max(data$Date)
       ),
       selectizeInput(
-        "province",
+        "territory",
         "Province/Territory:",
-        choices = levels(data$Province),
+        choices = levels(data$Territory),
         options = list(placeholder = 'All Provinces/Territories'),
         multiple = TRUE
       ),
@@ -106,6 +107,13 @@ ui <- fluidPage(
         "City:",
         choices = levels(data$City),
         options = list(placeholder = 'All Cities'),
+        multiple = TRUE
+      ),
+      selectizeInput(
+        "napsid",
+        "Monitoring Station ID (NAPSID):",
+        choices = levels(data$NAPSID),
+        options = list(placeholder = 'All Monitoring Stations'),
         multiple = TRUE
       ),
       checkboxGroupInput(
@@ -155,9 +163,9 @@ server <- function(input, output, session) {
       filter(between(Date, input$date[1], input$date[2])) |>
       filter(Pollutant %in% input$pollutant)
     
-    if (length(input$province) > 0) {
+    if (length(input$territory) > 0) {
       data_filtered <- data_filtered |>
-        filter(Province %in% input$province)
+        filter(Territory %in% input$territory)
     }
     
     if (length(input$city) > 0) {
@@ -165,28 +173,53 @@ server <- function(input, output, session) {
         filter(City %in% input$city)
     }
     
+    if (length(input$napsid) > 0) {
+      data_filtered <- data_filtered |>
+        filter(NAPSID %in% input$napsid)
+    }
+    
     data_filtered <- data_filtered |>
       mutate(
         City = fct_drop(City),
-        Province = fct_drop(Province),
+        Territory = fct_drop(Territory),
         Pollutant = fct_drop(Pollutant)
       )
     
     data_filtered
   })
   
-  # If provinces are selected, update the list of cities
-  observeEvent(input$province, ignoreNULL = FALSE, {
-    province_cities <- data
-    if (length(input$province) > 0) {
-      province_cities <-
-        province_cities |> filter(Province %in% input$province)
+  # If provinces/territories are selected, update the list of cities
+  observeEvent(input$territory, ignoreNULL = FALSE, {
+    territory_data <- data
+    if (length(input$territory) > 0) {
+      territory_data <-
+        territory_data |> filter(Territory %in% input$territory)
     }
-    province_cities <- province_cities |> distinct(City) |> pull()
+    territory_cities <- territory_data |> distinct(City) |> pull()
+    territory_stations <-
+      territory_data |> distinct(NAPSID) |> pull()
     
     updateSelectizeInput(session,
                          "city",
-                         choices = province_cities,
+                         choices = territory_cities,
+                         selected = c())
+    updateSelectizeInput(session,
+                         "napsid",
+                         choices = territory_stations,
+                         selected = c())
+  })
+  
+  observeEvent(input$city, ignoreNULL = FALSE, {
+    city_data <- data
+    if (length(input$city) > 0) {
+      city_data <-
+        city_data |> filter(City %in% input$city)
+    }
+    city_stations <- city_data |> distinct(NAPSID) |> pull()
+    
+    updateSelectizeInput(session,
+                         "napsid",
+                         choices = city_stations,
                          selected = c())
   })
   
