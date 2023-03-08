@@ -73,7 +73,7 @@ ui <- fluidPage(
     paste(
       '#pollutant .shiny-options-group :nth-child(',
       seq_along(pollutant.colors) ,
-      ') label::after { content: "█"; color: ',
+      ') label::before { content: "■ "; color: ',
       pollutant.colors,
       '}\n',
       sep = ""
@@ -91,7 +91,7 @@ ui <- fluidPage(
         "Date:",
         min = min(data$Date),
         max = max(data$Date),
-        start = max(min(data$Date), max(data$Date) - years(10)),
+        start = max(min(data$Date), max(data$Date) - years(10) + months(1)),
         end = max(data$Date)
       ),
       selectizeInput(
@@ -129,10 +129,12 @@ ui <- fluidPage(
       ),
       tabPanel("Monitoring Stations",
                fluidRow(column(
-                 width = 12, leafletOutput("map")
+                 width = 12, leafletOutput("map", height = 800)
                )),
                fluidRow(
-                 p("Each point is a monitoring station", className = "my-4")
+                 p(
+                   "Each point is a monitoring station, with the color corresponds to what the pollutants are measured (refer to the panel to the left for the palette)."
+                 )
                ))
     ),
     width = 9)
@@ -142,7 +144,7 @@ ui <- fluidPage(
   includeHTML("footer.html"),
   
   title = "Air Pollution Trends across Canada, 2001-2020",
-  theme = bslib::bs_theme(bootswatch = "lumen")
+  theme = bslib::bs_theme(version = 5, bootswatch = "lumen")
 )
 
 # Define server logic required
@@ -208,7 +210,7 @@ server <- function(input, output, session) {
       arrange(Value) |>
       ggplot(aes(x = Date, y = Value, fill = Pollutant)) +
       geom_col() +
-      scale_x_date(date_breaks = "years" , date_labels = "%b %y") +
+      scale_x_date(date_breaks = "years" , date_labels = default.date.format) +
       labs(x = "Date",
            y = "Pollutant level (ppm)",
            title = "Breakdown by pollutants of the monthly average concentration") +
@@ -229,7 +231,7 @@ server <- function(input, output, session) {
       ggplot(aes(x = Date, y = Value, color = Pollutant)) +
       geom_line() +
       geom_point() +
-      scale_x_date(date_breaks = "years" , date_labels = "%b %y") +
+      scale_x_date(date_breaks = "years" , date_labels = default.date.format) +
       labs(x = "Date",
            y = "Pollutant level (ppm)",
            title = "Monthly pollutant levels") +
@@ -244,22 +246,81 @@ server <- function(input, output, session) {
   
   # Map
   output$map <- renderLeaflet({
-    locations <- data_selected() |>
-      distinct(Pollutant, Latitude, Longitude, City)
-    
     pollutant.color.factor <-
       colorFactor(pollutant.colors, domain = names(pollutants))
     
-    leaflet(height = "800px") |>
+    data_selected() |>
+      group_by(NAPSID, Pollutant, Latitude, Longitude, City) |>
+      summarize(
+        Date.Start = format(min(Date), default.date.format),
+        Date.End = format(max(Date), default.date.format),
+        Value.Min = min(Value),
+        Value.Mean = mean(Value),
+        Value.Max = max(Value),
+        Value.Count = n()
+      ) |>
+      mutate(
+        label = paste(
+          "Monitoring Station ID: <strong>",
+          NAPSID,
+          "</strong><br>",
+          "Location: <strong>",
+          City,
+          "</strong><br>",
+          "Pollutant: <strong>",
+          Pollutant,
+          "</strong>",
+          sep = ""
+        ) |>
+          lapply(htmltools::HTML),
+        popup = paste(
+          "Monitoring Station ID: <strong>",
+          NAPSID,
+          "</strong><br>",
+          "Location: <strong>",
+          City,
+          "</strong><br>",
+          "Pollutant: <strong>",
+          Pollutant,
+          "</strong><br><br>",
+          "Record Date Range: <strong>",
+          Date.Start,
+          "</strong> - <strong>",
+          Date.End,
+          "</strong><br>",
+          "Measurement Values: <strong>",
+          round(Value.Min, 2),
+          "</strong> - <strong>",
+          round(Value.Max, 2),
+          "</strong> (Mean: <strong>",
+          round(Value.Mean, 2),
+          "</strong>)",
+          sep = ""
+        ) |>
+          lapply(htmltools::HTML),
+      ) |>
+      leaflet() |>
       addProviderTiles(providers$CartoDB.Voyager) |>
       addCircleMarkers(
-        data = locations,
-        label = locations |> select(City) |> pull(),
+        lng = ~ Longitude,
+        lat = ~ Latitude,
+        label = ~ label,
+        popup = ~ popup,
         color = ~ pollutant.color.factor(Pollutant),
         radius = 4,
         fillOpacity = 0.8,
         stroke = FALSE,
-        clusterOptions = markerClusterOptions()
+        clusterOptions = markerClusterOptions(
+          iconCreateFunction = JS(
+            "function (cluster) {
+              return new L.DivIcon({
+                html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                className: 'marker-cluster marker-cluster-generic',
+                iconSize: new L.Point(40, 40)
+              });
+            }"
+          )
+        )
       )
   })
 }
