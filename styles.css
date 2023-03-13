@@ -7,3 +7,7 @@
 label.control-label {
   font-weight: 700;
 }
+
+.marker-cluster-generic {
+  background-color: rgba(98, 242, 252, 0.6);
+}

@@ -8,3 +8,7 @@ NAPS_dataset_path <-
 # Color palette set
 # This is passed to the RColorBrewer
 pollutant.color.palette <- 'Set2'
+
+# Default date format
+# Refer to R documentation for more
+default.date.format <- "%b %Y"
