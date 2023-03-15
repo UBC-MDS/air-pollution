@@ -4,6 +4,7 @@ library(plyr)
 library(tidyverse)
 library(leaflet)
 library(lubridate)
+library(rmarkdown)
 
 source("config.R")
 
@@ -123,6 +124,7 @@ ui <- fluidPage(
         choiceValues = names(pollutants),
         selected = c("CO", "NO", "NO2", "O3", "SO2")
       ),
+      downloadButton("report","Generate report"),
       width = 3
     ),
     
@@ -276,6 +278,33 @@ server <- function(input, output, session) {
         hjust = 1
       ))
   })
+  
+  #Download Report
+  output$report <- downloadHandler(
+    filename = "report.html",
+    content = function(file) {
+      tempReport <- file.path(tempdir(), "report.rmd")
+      file.copy("report.rmd", tempReport, overwrite = TRUE)
+      
+      # Set up parameters to pass to Rmd document
+      params <- list(daterange = input$date,
+                     territory = input$territory,
+                     city = input$city,
+                     napsid = input$napsid,
+                     pollutants = input$pollutant)
+      id <- showNotification(
+        "Rendering report...", 
+        duration = NULL, # in seconds
+        closeButton = FALSE
+      )
+      on.exit(removeNotification(id), add = TRUE)
+      
+      rmarkdown::render(tempReport, output_file = file,
+                        params = params,
+                        envir = new.env(parent = globalenv())
+      )
+    }
+  )
   
   # Map
   output$map <- renderLeaflet({
