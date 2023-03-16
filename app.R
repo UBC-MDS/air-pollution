@@ -1,3 +1,4 @@
+library(plotly)
 library(shiny)
 library(fmsb)
 library(plyr)
@@ -5,6 +6,7 @@ library(tidyverse)
 library(leaflet)
 library(lubridate)
 library(rmarkdown)
+
 
 source("config.R")
 

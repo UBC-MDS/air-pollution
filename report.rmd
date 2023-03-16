@@ -19,6 +19,7 @@ library(leaflet)
 library(lubridate)
 library(rmarkdown)
 library(knitr)
+library(plotly)
 
 pollutants <- c(
   "CO" = "Carbon monoxide",
@@ -112,7 +113,7 @@ kable(head(data_filtered))
 ## Plots
 
 ```{r bar-plot, echo=FALSE}
- bar_plot <- data_filtered |>
+bar_plot <- data_filtered |>
       arrange(Value) |>
       ggplot(aes(x = Date, y = Value, fill = Pollutant)) +
       geom_col() +
@@ -127,7 +128,7 @@ kable(head(data_filtered))
         vjust = 0.5,
         hjust = 1
       ))
-bar_plot
+ggplotly(bar_plot)
 ```
 
 ```{r radar-plot, echo=FALSE}
@@ -144,7 +145,7 @@ fmsb::radarchart(data_radar, title = "Pollutants")
 ```
 
 ```{r line-plot, echo=FALSE}
-line_plot <- data_filtered |>
+line_plot <- data_filtered  |>
       group_by(Date, Pollutant) |>
       summarize(Value = mean(Value)) |>
       ggplot(aes(x = Date, y = Value, color = Pollutant)) +
@@ -161,8 +162,7 @@ line_plot <- data_filtered |>
         vjust = 0.5,
         hjust = 1
       ))
-
-line_plot
+ggplotly(line_plot)
 ```
 
 ## Map
