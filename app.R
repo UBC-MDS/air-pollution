@@ -4,8 +4,6 @@ library(plyr)
 library(tidyverse)
 library(leaflet)
 library(lubridate)
-library(plotly)
-library(shinyBS)
 
 source("config.R")
 
@@ -256,7 +254,7 @@ server <- function(input, output, session) {
         vjust = 0.5,
         hjust = 1
       ))
-    ggplotly(bar_plot) 
+    ggplotly(bar_plot)
   })
   
   # Line plot
