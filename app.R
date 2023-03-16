@@ -4,6 +4,8 @@ library(plyr)
 library(tidyverse)
 library(leaflet)
 library(lubridate)
+library(plotly)
+library(shinyBS)
 
 source("config.R")
 
@@ -132,8 +134,8 @@ ui <- fluidPage(
       tabPanel(
         "Breakdown of Pollutants",
         fluidRow(column(width = 3, plotOutput("radarPlot")),
-                 column(width = 9, plotOutput("stackedBarChart"))),
-        fluidRow(column(width = 12, plotOutput("linePlot")))
+                 column(width = 9, plotlyOutput("stackedBarChart"))),
+        fluidRow(column(width = 12, plotlyOutput("linePlot")))
       ),
       tabPanel("Monitoring Stations",
                fluidRow(column(
@@ -238,8 +240,8 @@ server <- function(input, output, session) {
   })
   
   # Stacked bar chart
-  output$stackedBarChart <- renderPlot({
-    data_selected() |>
+  output$stackedBarChart <- renderPlotly({
+    bar_plot <- data_selected() |>
       arrange(Value) |>
       ggplot(aes(x = Date, y = Value, fill = Pollutant)) +
       geom_col() +
@@ -254,11 +256,12 @@ server <- function(input, output, session) {
         vjust = 0.5,
         hjust = 1
       ))
+    ggplotly(bar_plot) 
   })
   
   # Line plot
-  output$linePlot <- renderPlot({
-    data_selected() |>
+  output$linePlot <- renderPlotly({
+    line_plot <- data_selected() |>
       group_by(Date, Pollutant) |>
       summarize(Value = mean(Value)) |>
       ggplot(aes(x = Date, y = Value, color = Pollutant)) +
@@ -275,6 +278,7 @@ server <- function(input, output, session) {
         vjust = 0.5,
         hjust = 1
       ))
+    ggplotly(line_plot)
   })
   
   # Map
