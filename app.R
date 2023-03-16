@@ -4,6 +4,7 @@ library(plyr)
 library(tidyverse)
 library(leaflet)
 library(lubridate)
+library(plotly)
 
 source("config.R")
 
