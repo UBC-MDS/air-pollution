@@ -285,79 +285,89 @@ server <- function(input, output, session) {
     pollutant.color.factor <-
       colorFactor(pollutant.colors, domain = names(pollutants))
     
-    data_selected() |>
-      group_by(NAPSID, Pollutant, Latitude, Longitude, City) |>
-      summarize(
-        Date.Start = format(min(Date), default.date.format),
-        Date.End = format(max(Date), default.date.format),
-        Value.Min = min(Value),
-        Value.Mean = mean(Value),
-        Value.Max = max(Value),
-        Value.Count = n()
-      ) |>
-      mutate(
-        label = paste(
-          "Monitoring Station ID: <strong>",
-          NAPSID,
-          "</strong><br>",
-          "Location: <strong>",
-          City,
-          "</strong><br>",
-          "Pollutant: <strong>",
-          Pollutant,
-          "</strong>",
-          sep = ""
+    map <- leaflet() |>
+      addProviderTiles(providers$CartoDB.Voyager)
+    
+    markers <- data_selected()
+
+    if (nrow(markers) > 0) {
+      markers <- markers |>
+        group_by(NAPSID, Pollutant, Latitude, Longitude, City) |>
+        summarize(
+          Date.Start = format(min(Date), default.date.format),
+          Date.End = format(max(Date), default.date.format),
+          Value.Min = min(Value),
+          Value.Mean = mean(Value),
+          Value.Max = max(Value),
+          Value.Count = n()
         ) |>
-          lapply(htmltools::HTML),
-        popup = paste(
-          "Monitoring Station ID: <strong>",
-          NAPSID,
-          "</strong><br>",
-          "Location: <strong>",
-          City,
-          "</strong><br>",
-          "Pollutant: <strong>",
-          Pollutant,
-          "</strong><br><br>",
-          "Record Date Range: <strong>",
-          Date.Start,
-          "</strong> - <strong>",
-          Date.End,
-          "</strong><br>",
-          "Measurement Values: <strong>",
-          round(Value.Min, 2),
-          "</strong> - <strong>",
-          round(Value.Max, 2),
-          "</strong> (Mean: <strong>",
-          round(Value.Mean, 2),
-          "</strong>)",
-          sep = ""
-        ) |>
-          lapply(htmltools::HTML),
-      ) |>
-      leaflet() |>
-      addProviderTiles(providers$CartoDB.Voyager) |>
-      addCircleMarkers(
-        lng = ~ Longitude,
-        lat = ~ Latitude,
-        label = ~ label,
-        popup = ~ popup,
-        color = ~ pollutant.color.factor(Pollutant),
-        radius = 4,
-        fillOpacity = 0.8,
-        stroke = FALSE,
-        clusterOptions = markerClusterOptions(
-          iconCreateFunction = JS(
-            "function (cluster) {
-              return new L.DivIcon({
-                html: '<div><span>' + cluster.getChildCount() + '</span></div>',
-                className: 'marker-cluster marker-cluster-generic',
-                iconSize: new L.Point(40, 40)
-              });
-            }"
+        mutate(
+          label = paste(
+            "Monitoring Station ID: <strong>",
+            NAPSID,
+            "</strong><br>",
+            "Location: <strong>",
+            City,
+            "</strong><br>",
+            "Pollutant: <strong>",
+            Pollutant,
+            "</strong>",
+            sep = ""
+          ) |>
+            lapply(htmltools::HTML),
+          popup = paste(
+            "Monitoring Station ID: <strong>",
+            NAPSID,
+            "</strong><br>",
+            "Location: <strong>",
+            City,
+            "</strong><br>",
+            "Pollutant: <strong>",
+            Pollutant,
+            "</strong><br><br>",
+            "Record Date Range: <strong>",
+            Date.Start,
+            "</strong> - <strong>",
+            Date.End,
+            "</strong><br>",
+            "Measurement Values: <strong>",
+            round(Value.Min, 2),
+            "</strong> - <strong>",
+            round(Value.Max, 2),
+            "</strong> (Mean: <strong>",
+            round(Value.Mean, 2),
+            "</strong>)",
+            sep = ""
+          ) |>
+            lapply(htmltools::HTML),
+        )
+      
+      map <- map |>
+        addCircleMarkers(
+          data = markers,
+          lng = ~ Longitude,
+          lat = ~ Latitude,
+          label = ~ label,
+          popup = ~ popup,
+          color = ~ pollutant.color.factor(Pollutant),
+          radius = 4,
+          fillOpacity = 0.8,
+          stroke = FALSE,
+          clusterOptions = markerClusterOptions(
+            iconCreateFunction = JS(
+              "function (cluster) {
+                return new L.DivIcon({
+                  html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                  className: 'marker-cluster marker-cluster-generic',
+                  iconSize: new L.Point(40, 40)
+                });
+              }"
+            )
           )
         )
-      )
+    }
+    
+    map
   })
 }
 
