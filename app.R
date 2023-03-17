@@ -168,6 +168,7 @@ ui <- fluidPage(
         options = list(placeholder = 'All Monitoring Stations'),
         multiple = TRUE
       ),
+      p("*To deselect input, click on value and press delete on keyboard"),
       checkboxGroupInput(
         "pollutant",
         "Pollutants:",
