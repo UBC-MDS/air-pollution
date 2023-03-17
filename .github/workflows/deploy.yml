@@ -25,9 +25,6 @@ jobs:
       - name: Set-up R environment
         uses: r-lib/actions/setup-renv@v2
 
-      - name: Install dependencies
-        run: Rscript install-deps.R
-
       - name: Localize dataset
         run: Rscript localize-dataset.R
 

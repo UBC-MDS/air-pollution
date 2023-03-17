@@ -30,19 +30,21 @@ On it, you could experiment with 20 years of [National Air Pollution Surveillanc
 
 The project is implemented in R using [Shiny](https://shiny.rstudio.com/).
 
-After setting up the R development environment, install the dependencies by:
+The project dependencies are managed by [`renv`](https://rstudio.github.io/renv/articles/renv.html). The first time the project is cloned, run:
 
 ```bash
-Rscript install-deps.R
+R -e 'renv::restore()'
 ```
 
-It can be run by:
+> Note: if you have updates on the project dependencies, remember to run `renv::snapshot()` and commit the changed lock file.
+
+The application can be started by:
 
 ```bash
 Rscript app.R
 ```
 
-You can then access the application at the displayed URL. By default it binds to a random local port, but it can be overridden by specifying `PORT` parameter by using:
+You can then access the application at the displayed URL. By default, it binds to a random local port, but it can be overridden by specifying `PORT` parameter by using:
 
 ```bash
 PORT=9999 Rscript app.R

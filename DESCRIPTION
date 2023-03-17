@@ -1,0 +1,15 @@
+Package: air-pollution
+Title: Air Pollution Trends across Canada, 2001–2020
+Version: 0.0.0.20220316
+Type: project
+Description: An exploration of the Canada NAPS Dataset (2001-2020)
+License: MIT
+Encoding: UTF-8
+Depends:
+    shiny,
+    fmsb,
+    tidyverse,
+    plyr,
+    leaflet,
+    rsconnect,
+    plotly
