@@ -177,12 +177,9 @@ ui <- fluidPage(
         choiceValues = names(pollutants),
         selected = c("CO", "NO", "NO2", "O3", "SO2")
       ),
-<<<<<<< HEAD
-      downloadButton("report","Generate report"),
-=======
       strong("Description of Pollutants:"),
       uiOutput("pol_desc"),
->>>>>>> main
+      downloadButton("report","Generate report"),
       width = 3
     ),
     
