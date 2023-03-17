@@ -27,6 +27,43 @@ pollutants <- c(
   "PM10" = "Particulate matter, of max diameter of 10μm"
 )
 
+
+pollutant_description <- c(
+  "CO" = paste0("Carbon monoxide is a result of burning fuel.<br>" ,
+                "A large contributor of this toxic gas are cars and other motor vehicles. <br> ", 
+                "It can cause lung diseases in humans and is a detriment to nature and animals.<br>",
+                "<br><small>Source: https://en.wikipedia.org/wiki/Air_pollution#Pollutants</small>"),
+  "NO" = paste0("Nitric oxide (nitrogen oxide or nitrogen monoxide) can be harmful to humans.<br>",
+                "Government organizations have set limits on the level of exposure allowed in the workplace.<br>",
+                "At a level of 100 ppm, it is very hazardous to health.<br>",
+                "<br><small>Source: https://en.wikipedia.org/wiki/Nitric_oxide</small>"),
+  "NO2" = paste0("Nitrogen Dioxide can be a result of vehicles burning fuel. <br>",
+                 "Usually, exposure to NO2 causes harm slowly. <br>",
+                 "The results could be mild irritation of the nose and throat. <br>",
+                 "At higher levels, NO2 could lead to lung issues and even death. <br>",
+                 "<br><small>Source: https://en.wikipedia.org/wiki/Nitrogen_dioxide</small>"),
+  "NOX" = paste0("Nitrogen oxides could be a result of combustion or the electric discarge <br>",
+                 "during thunderstorms.<br>",
+                 "It is a reddish-brown gas with a biting odor <br>",
+                 "and is one of the most prominent air pollutants. <br>",
+                 "<br><small>Source: https://en.wikipedia.org/wiki/Air_pollution#Pollutants</small>"),
+  "O3" = paste0("Ozone, found in the stratosphere, is important in making up the ozone layer.<br>",
+                "It is a pollutant and results mostly from the burning of fossil fuels. <br>",
+                "<br><small>Source: https://en.wikipedia.org/wiki/Air_pollution#Pollutants</small>"),
+  "SO2" = paste0("Sulfur dioxide is created by volcanoes and the waste of industries. <br>",
+                 "Burning of coal and petroleum can result in sulfur dioxide. <br>",
+                 "Its part in creating acidic rain can have worrying results on the environment. <br>",
+                 "<br><small>Source: https://en.wikipedia.org/wiki/Air_pollution#Pollutants</small>"),
+  "PM2.5" = paste0("Particulate matter/particles are particles supspended in gas are miscroscopic. <br>",
+                   "PM2.5 has a diameter of 2.5 micrometers.<br>",
+                   "They can be created by volcanoes, dust storms, forest and grassland fires, living plants, and sea spray.<br>",
+                   "Humans contribute to an increase of PMs by burning fossil fuels.<br>",
+                   "Overexposure to particulate matter is hazardous to humans and could cause heart and lung diseases. <br>",
+                   "It can be harmful to people with asthma.<br>",
+                   "<br><small>Source: https://en.wikipedia.org/wiki/Air_pollution#Pollutants</small>"),
+  "PM10" = paste0("PM10 has a diameter of 10 micrometers. See description for PM2.5 for more information.")
+)
+
 pollutant.colors <-
   RColorBrewer::brewer.pal(length(pollutants), pollutant.color.palette)
 
@@ -79,8 +116,22 @@ ui <- fluidPage(
       pollutant.colors,
       '}\n',
       sep = ""
-    )
-  ))),
+    ),"
+        .popover{
+        max-width: 100%; }
+        .popover-title { display: none; }
+    ")),
+    tags$script(HTML("
+     $(document).ready(function(){
+       $('body').popover({
+         selector: '[data-toggle=\"popover\"]',
+         title: '',
+         html: true,
+         trigger: 'hover',
+         container: 'body'
+         });});
+      ")
+  )),
   
   # Header
   includeHTML("header.html"),
@@ -117,6 +168,7 @@ ui <- fluidPage(
         options = list(placeholder = 'All Monitoring Stations'),
         multiple = TRUE
       ),
+      p("*To deselect input, click on value and press delete on keyboard"),
       checkboxGroupInput(
         "pollutant",
         "Pollutants:",
@@ -124,6 +176,8 @@ ui <- fluidPage(
         choiceValues = names(pollutants),
         selected = c("CO", "NO", "NO2", "O3", "SO2")
       ),
+      strong("Description of Pollutants:"),
+      uiOutput("pol_desc"),
       width = 3
     ),
     
@@ -368,6 +422,17 @@ server <- function(input, output, session) {
     }
     
     map
+  })
+  
+  output$pol_desc <- renderUI({
+    HTML(
+      paste0(
+        sprintf(
+          "<a href='#' data-toggle='popover' title='%s' data-placement='bottom' data-content=''>%s</a>",
+          pollutant_description, 
+          pollutants), "<br>"
+      )
+    )
   })
 }
 
