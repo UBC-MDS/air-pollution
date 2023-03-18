@@ -200,10 +200,16 @@ ui <- fluidPage(
                  p(
                    "Each point is a monitoring station, with the color corresponds to what the pollutants are measured (refer to the panel to the left for the palette)."
                  )
-               ))
+               )),
+      tabPanel(
+        "Seasonality",
+        fluidRow(
+          column(width = 12, plotlyOutput("seasonalPlot", height = 600)))
+      )
     ),
     width = 9)
-  ),
+    ),
+  
   
   # Footer
   includeHTML("footer.html"),
@@ -362,6 +368,50 @@ server <- function(input, output, session) {
       )
     }
   )
+
+  # Seasonal plot
+  output$seasonalPlot <- renderPlotly({
+    months = c('Jan',
+               'Feb',
+               'Mar',
+               'Apr',
+               'May',
+               'Jun',
+               'Jul',
+               'Aug',
+               'Sep',
+               'Oct',
+               'Nov',
+               'Dec')
+    data_mod <- data_selected() |> mutate(
+      month_name = lubridate::month(Date, label = TRUE),
+      month_num = lubridate::month(Date, label = FALSE)
+    )
+    
+    options(dplyr.summarise.inform = FALSE)
+    
+    seasonal_plot <- data_mod |> 
+      group_by(Pollutant, month_num) |> 
+      summarise(meanValue= mean(Value)) |>
+      ggplot(aes(x = month_num,
+            y = meanValue,
+            color = Pollutant)) +
+      scale_colour_brewer(palette = pollutant.color.palette) +
+      geom_line(size = 0.6) +
+      geom_point(size = 1) +
+      labs(x = "Month",
+           y = "Pollutant level (ppm)",
+           title = "Monthly average Pollutant levels") +
+      scale_x_continuous(labels = months,
+                         breaks = 1:12,
+                         limits = c(1,12)) + 
+      theme_classic() + 
+      theme(axis.text.x = element_text(angle = 90)) +
+      theme(legend.position = c(1.05,0.85))
+    
+  ggplotly(seasonal_plot)
+  })
+
   
   # Map
   output$map <- renderLeaflet({
