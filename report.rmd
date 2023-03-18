@@ -23,6 +23,7 @@ library(ggplot2)
 library(leaflet)
 library(lubridate)
 library(rmarkdown)
+library(knitr)
 
 pollutants <- c(
   "CO" = "Carbon monoxide",
