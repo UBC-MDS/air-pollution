@@ -13,3 +13,5 @@ Depends:
     leaflet,
     rsconnect,
     plotly
+Suggests: 
+    shinytest2

@@ -2,7 +2,11 @@ library(plotly)
 library(shiny)
 library(fmsb)
 library(plyr)
-library(tidyverse)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(forcats)
+library(ggplot2)
 library(leaflet)
 library(lubridate)
 library(rmarkdown)
@@ -247,7 +251,6 @@ server <- function(input, output, session) {
         Territory = fct_drop(Territory),
         Pollutant = fct_drop(Pollutant)
       )
-    
     data_filtered
   })
   
@@ -287,17 +290,17 @@ server <- function(input, output, session) {
   })
   
   # Radar plot
-  output$radarPlot <- renderPlot({
-    data_radar <- data_selected() |>
-      group_by(Pollutant) |>
-      summarise(Value = mean(Value)) |>
-      pivot_wider(names_from = "Pollutant", values_from = "Value")
-    max <- plyr::round_any(max(data_radar), 10, f = `ceiling`)
-    n_col <- ncol(data_radar)
-    data_radar <- rbind(rep(max, n_col),
+  output$radarPlot <- renderPlot({ 
+      data_radar <- data_selected() |>
+        group_by(Pollutant) |>
+        summarise(Value = mean(Value)) |>
+        pivot_wider(names_from = "Pollutant", values_from = "Value")
+      max <- plyr::round_any(max(data_radar), 10, f = `ceiling`)
+      n_col <- ncol(data_radar)
+      data_radar <- rbind(rep(max, n_col),
                         rep(0, n_col),
                         data_radar)
-    fmsb::radarchart(data_radar, title = "Pollutants")
+      fmsb::radarchart(data_radar, title = "Pollutants")
   })
   
   # Stacked bar chart
