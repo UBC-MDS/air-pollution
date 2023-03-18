@@ -1,0 +1,295 @@
+---
+title: "Air Pollution Trends across Canada, 2001-2020"
+params: 
+  daterange: NA,
+  territory: NA,
+  city: NA,
+  napsid: NA,
+  pollutants: NA
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(shiny)
+library(fmsb)
+library(plyr)
+library(tidyverse)
+library(leaflet)
+library(lubridate)
+library(rmarkdown)
+library(knitr)
+library(plotly)
+
+pollutants <- c(
+  "CO" = "Carbon monoxide",
+  "NO" = "Nitrogen oxide",
+  "NO2" = "Nitrogen dioxide",
+  "NOX" = "Nitrogen oxides",
+  "O3" = "Ozone",
+  "SO2" = "Sulphur dioxide",
+  "PM2.5" = "Particulate matter, max diameter of 2.5μm",
+  "PM10" = "Particulate matter, of max diameter of 10μm"
+)
+
+pollutant.colors <-
+  RColorBrewer::brewer.pal(length(pollutants), pollutant.color.palette)
+
+data <- read_csv(NAPS_dataset_path, show_col_types = FALSE) |>
+  mutate(
+    Territory_Name = case_when(
+      Territory == "AB" ~ "Alberta",
+      Territory == "BC" ~ "British Columbia",
+      Territory == "MB" ~ "Manitoba",
+      Territory == "NB" ~ "New Brunswick",
+      Territory == "NL" ~ "Newfoundland",
+      Territory == "NS" ~ "Nova Scotia",
+      Territory == "NT" ~ "Northwest Territories",
+      Territory == "NU" ~ "Nunavut",
+      Territory == "ON" ~ "Ontario",
+      Territory == "PE" ~ "Prince Edward Island",
+      Territory == "QC" ~ "Quebec",
+      Territory == "SK" ~ "Saskatchewan",
+      Territory == "YU" ~ "Yukon",
+      TRUE ~ NA
+    )
+  ) |>
+  mutate_if(is.character, utf8::utf8_encode) |>
+  mutate(
+    City = paste0(City, ", ", Territory),
+    Territory = paste0(Territory_Name, " (", Territory, ")")
+  ) |>
+  mutate(
+    NAPSID = fct_relevel(as.factor(NAPSID)),
+    City = fct_relevel(as.factor(City)),
+    Territory = fct_relevel(as.factor(Territory)),
+    Pollutant = fct_relevel(as.factor(Pollutant), names(pollutants))
+  )
+```
+
+## Selections
+  **Date Range:** `r params$daterange`
+  
+  **Territory:** `r params$territory`
+  
+  **City:** `r params$city`
+  
+  **Monitoring Station ID:** `r params$napsid`
+  
+  **Pollutants:** `r params$pollutant`
+  
+## Snapshot of the Data
+```{r data}
+# Filters the data based on user selections
+    data_filtered <- data |>
+      filter(between(Date, params$date[1], params$date[2])) |>
+      filter(Pollutant %in% params$pollutant)
+    
+    if (length(params$territory) > 0) {
+      data_filtered <- data_filtered |>
+        filter(Territory %in% params$territory)
+    }
+    
+    if (length(params$city) > 0) {
+      data_filtered <- data_filtered |>
+        filter(City %in% params$city)
+    }
+    
+    if (length(params$napsid) > 0) {
+      data_filtered <- data_filtered |>
+        filter(NAPSID %in% params$napsid)
+    }
+    
+    data_filtered <- data_filtered |>
+      mutate(
+        City = fct_drop(City),
+        Territory = fct_drop(Territory),
+        Pollutant = fct_drop(Pollutant)
+      )
+    
+kable(head(data_filtered))
+```
+
+## Plots
+
+```{r bar-plot, echo=FALSE}
+bar_plot <- data_filtered |>
+      arrange(Value) |>
+      ggplot(aes(x = Date, y = Value, fill = Pollutant)) +
+      geom_col() +
+      scale_x_date(date_breaks = "years" , date_labels = default.date.format) +
+      labs(x = "Date",
+           y = "Pollutant level (ppm)",
+           title = "Breakdown by pollutants of the monthly average concentration") +
+      scale_fill_brewer(palette = pollutant.color.palette) +
+      theme_classic() +
+      theme(axis.text.x = element_text(
+        angle = 90,
+        vjust = 0.5,
+        hjust = 1
+      ))
+ggplotly(bar_plot)
+```
+
+```{r radar-plot, echo=FALSE}
+data_radar <- data_filtered |>
+      group_by(Pollutant) |>
+      summarise(Value = mean(Value)) |>
+      pivot_wider(names_from = "Pollutant", values_from = "Value")
+    max <- plyr::round_any(max(data_radar), 10, f = `ceiling`)
+    n_col <- ncol(data_radar)
+    data_radar <- rbind(rep(max, n_col),
+                        rep(0, n_col),
+                        data_radar)
+fmsb::radarchart(data_radar, title = "Pollutants")
+```
+
+```{r line-plot, echo=FALSE}
+line_plot <- data_filtered  |>
+      group_by(Date, Pollutant) |>
+      summarize(Value = mean(Value)) |>
+      ggplot(aes(x = Date, y = Value, color = Pollutant)) +
+      geom_line() +
+      geom_point() +
+      scale_x_date(date_breaks = "years" , date_labels = default.date.format) +
+      labs(x = "Date",
+           y = "Pollutant level (ppm)",
+           title = "Monthly pollutant levels") +
+      scale_colour_brewer(palette = pollutant.color.palette) +
+      theme_classic() +
+      theme(axis.text.x = element_text(
+        angle = 90,
+        vjust = 0.5,
+        hjust = 1
+      ))
+ggplotly(line_plot)
+```
+## Seasonal Plot
+
+```{r seasonal}
+months = c('Jan',
+               'Feb',
+               'Mar',
+               'Apr',
+               'May',
+               'Jun',
+               'Jul',
+               'Aug',
+               'Sep',
+               'Oct',
+               'Nov',
+               'Dec')
+    data_mod <- data_filtered |> mutate(
+      month_name = lubridate::month(Date, label = TRUE),
+      month_num = lubridate::month(Date, label = FALSE)
+    )
+    
+    options(dplyr.summarise.inform = FALSE)
+    
+    seasonal_plot <- data_mod |> 
+      group_by(Pollutant, month_num) |> 
+      summarise(meanValue= mean(Value)) |>
+      ggplot(aes(x = month_num,
+            y = meanValue,
+            color = Pollutant)) +
+      scale_colour_brewer(palette = pollutant.color.palette) +
+      geom_line(size = 0.6) +
+      geom_point(size = 1) +
+      labs(x = "Month",
+           y = "Pollutant level (ppm)",
+           title = "Monthly average Pollutant levels") +
+      scale_x_continuous(labels = months,
+                         breaks = 1:12,
+                         limits = c(1,12)) + 
+      theme_classic() + 
+      theme(axis.text.x = element_text(angle = 90)) +
+      theme(legend.position = c(1.05,0.85))
+    
+  ggplotly(seasonal_plot)
+```
+
+## Map
+```{r map, echo=FALSE}
+pollutant.color.factor <-
+      colorFactor(pollutant.colors, domain = names(pollutants))
+    
+data_filtered |>
+      group_by(NAPSID, Pollutant, Latitude, Longitude, City) |>
+      summarize(
+        Date.Start = format(min(Date), default.date.format),
+        Date.End = format(max(Date), default.date.format),
+        Value.Min = min(Value),
+        Value.Mean = mean(Value),
+        Value.Max = max(Value),
+        Value.Count = n()
+      ) |>
+      mutate(
+        label = paste(
+          "Monitoring Station ID: <strong>",
+          NAPSID,
+          "</strong><br>",
+          "Location: <strong>",
+          City,
+          "</strong><br>",
+          "Pollutant: <strong>",
+          Pollutant,
+          "</strong>",
+          sep = ""
+        ) |>
+          lapply(htmltools::HTML),
+        popup = paste(
+          "Monitoring Station ID: <strong>",
+          NAPSID,
+          "</strong><br>",
+          "Location: <strong>",
+          City,
+          "</strong><br>",
+          "Pollutant: <strong>",
+          Pollutant,
+          "</strong><br><br>",
+          "Record Date Range: <strong>",
+          Date.Start,
+          "</strong> - <strong>",
+          Date.End,
+          "</strong><br>",
+          "Measurement Values: <strong>",
+          round(Value.Min, 2),
+          "</strong> - <strong>",
+          round(Value.Max, 2),
+          "</strong> (Mean: <strong>",
+          round(Value.Mean, 2),
+          "</strong>)",
+          sep = ""
+        ) |>
+          lapply(htmltools::HTML),
+      ) |>
+      leaflet() |>
+      addProviderTiles(providers$CartoDB.Voyager) |>
+      addCircleMarkers(
+        lng = ~ Longitude,
+        lat = ~ Latitude,
+        label = ~ label,
+        popup = ~ popup,
+        color = ~ pollutant.color.factor(Pollutant),
+        radius = 4,
+        fillOpacity = 0.8,
+        stroke = FALSE,
+        clusterOptions = markerClusterOptions(
+          iconCreateFunction = JS(
+            "function (cluster) {
+              return new L.DivIcon({
+                html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                className: 'marker-cluster marker-cluster-generic',
+                iconSize: new L.Point(40, 40)
+              });
+            }"
+          )
+        )
+      )
+```
+
+Copyright © 2023 Elena Ganacheva, Ritisha Sharma, Ranjit Sundaramurthi, Kelvin Wong.
+
+This software is free and open source, licensed under the MIT license.
+
+Uses the National Air Pollution Surveillance (NAPS) data published by the Government of Canada, governed by the terms of the Open Government License - Canada.

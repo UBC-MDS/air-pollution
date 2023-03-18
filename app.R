@@ -1,10 +1,11 @@
+library(plotly)
 library(shiny)
 library(fmsb)
 library(plyr)
 library(tidyverse)
 library(leaflet)
 library(lubridate)
-library(plotly)
+library(rmarkdown)
 
 source("config.R")
 
@@ -178,6 +179,7 @@ ui <- fluidPage(
       ),
       strong("Description of Pollutants:"),
       uiOutput("pol_desc"),
+      downloadButton("report","Generate report"),
       width = 3
     ),
     
@@ -340,6 +342,33 @@ server <- function(input, output, session) {
     ggplotly(line_plot)
   })
   
+  #Download Report
+  output$report <- downloadHandler(
+    filename = "report.html",
+    content = function(file) {
+      tempReport <- file.path(tempdir(), "report.rmd")
+      file.copy("report.rmd", tempReport, overwrite = TRUE)
+      
+      # Set up parameters to pass to Rmd document
+      params <- list(daterange = input$date,
+                     territory = input$territory,
+                     city = input$city,
+                     napsid = input$napsid,
+                     pollutants = input$pollutant)
+      id <- showNotification(
+        "Rendering report...", 
+        duration = NULL, # in seconds
+        closeButton = FALSE
+      )
+      on.exit(removeNotification(id), add = TRUE)
+      
+      rmarkdown::render(tempReport, output_file = file,
+                        params = params,
+                        envir = new.env(parent = globalenv())
+      )
+    }
+  )
+
   # Seasonal plot
   output$seasonalPlot <- renderPlotly({
     months = c('Jan',
@@ -382,6 +411,7 @@ server <- function(input, output, session) {
     
   ggplotly(seasonal_plot)
   })
+
   
   # Map
   output$map <- renderLeaflet({
